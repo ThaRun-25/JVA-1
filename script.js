@@ -529,6 +529,333 @@ function initParallax() {
     updateHero();
 }
 
+/* =========================================================
+   JVA — CINEMATIC ARCHITECTURAL MOTION
+========================================================= */
+
+function initGlobalMotion() {
+
+    const motionLayer =
+        document.querySelector(".global-motion");
+
+    if (!motionLayer) return;
+
+
+    const reducedMotion =
+        window.matchMedia(
+            "(prefers-reduced-motion: reduce)"
+        ).matches;
+
+
+    if (reducedMotion) return;
+
+
+    let ticking = false;
+
+
+    /* -----------------------------------------------------
+       MOUSE PARALLAX
+    ----------------------------------------------------- */
+
+    let mouseX = 0;
+    let mouseY = 0;
+
+    let currentMouseX = 0;
+    let currentMouseY = 0;
+
+
+    window.addEventListener(
+        "mousemove",
+        event => {
+
+            mouseX =
+                (event.clientX / window.innerWidth - 0.5)
+                * 2;
+
+            mouseY =
+                (event.clientY / window.innerHeight - 0.5)
+                * 2;
+
+        },
+        { passive: true }
+    );
+
+
+    /* -----------------------------------------------------
+       MAIN UPDATE
+    ----------------------------------------------------- */
+
+    function updateMotion() {
+
+        const scrollY =
+            window.scrollY || window.pageYOffset;
+
+
+        const pageHeight =
+            Math.max(
+                document.documentElement.scrollHeight -
+                window.innerHeight,
+                1
+            );
+
+
+        const progress =
+            Math.min(
+                Math.max(
+                    scrollY / pageHeight,
+                    0
+                ),
+                1
+            );
+
+        /*
+         * The motion layer is fixed to the viewport.
+         * Therefore raw document scroll (which can be several
+         * thousand pixels) would throw elements completely
+         * off-screen. Convert the full-page progress into a
+         * controlled architectural travel distance instead.
+         */
+        const motionScroll = progress * 1800;
+
+
+        /* ---------------------------------------------
+           SMOOTH MOUSE
+        --------------------------------------------- */
+
+        currentMouseX +=
+            (mouseX - currentMouseX) * 0.055;
+
+        currentMouseY +=
+            (mouseY - currentMouseY) * 0.055;
+
+
+        /* ---------------------------------------------
+           CSS VARIABLES
+        --------------------------------------------- */
+
+        motionLayer.style.setProperty(
+            "--motion-scroll",
+            `${motionScroll}px`
+        );
+
+
+        motionLayer.style.setProperty(
+            "--motion-progress",
+            progress
+        );
+
+
+        motionLayer.style.setProperty(
+            "--motion-x",
+            `${currentMouseX * 35}px`
+        );
+
+
+        motionLayer.style.setProperty(
+            "--motion-y",
+            `${currentMouseY * 25}px`
+        );
+
+
+        /* ---------------------------------------------
+           PROJECT IMAGE DEPTH
+        --------------------------------------------- */
+
+        const projectImages =
+            motionLayer.querySelectorAll(
+                ".motion-project img"
+            );
+
+
+        projectImages.forEach(
+            (image, index) => {
+
+                const depth =
+                    index === 0
+                        ? currentMouseX * 7
+                        : currentMouseX * -7;
+
+                const vertical =
+                    index === 0
+                        ? currentMouseY * 5
+                        : currentMouseY * -5;
+
+
+                image.style.transform =
+                    `translate3d(
+                        ${depth}px,
+                        ${vertical}px,
+                        0
+                    ) scale(1.08)`;
+
+            }
+        );
+
+
+        /* ---------------------------------------------
+           POINT MOVEMENT
+        --------------------------------------------- */
+
+        const points =
+            motionLayer.querySelectorAll(
+                ".motion-point"
+            );
+
+
+        points.forEach(
+            (point, index) => {
+
+                const direction =
+                    index % 2 === 0
+                        ? 1
+                        : -1;
+
+
+                const speed =
+                    0.035 +
+                    index * 0.009;
+
+
+                const y =
+                    motionScroll *
+                    speed *
+                    direction;
+
+
+                const x =
+                    currentMouseX *
+                    (8 + index * 2);
+
+
+                const scale =
+                    1 +
+                    Math.sin(
+                        motionScroll * 0.002 +
+                        index
+                    ) * 0.25;
+
+
+                point.style.transform =
+                    `translate3d(
+                        ${x}px,
+                        ${y}px,
+                        0
+                    ) scale(${scale})`;
+
+            }
+        );
+
+
+        /* ---------------------------------------------
+           CROSSHAIR ROTATION
+        --------------------------------------------- */
+
+        const crosshairs =
+            motionLayer.querySelectorAll(
+                ".motion-crosshair"
+            );
+
+
+        crosshairs.forEach(
+            (crosshair, index) => {
+
+                const directions =
+                    [
+                        -.12,
+                        .08,
+                        -.10,
+                        .13,
+                        -.07
+                    ];
+
+
+                const speed =
+                    directions[index] || .05;
+
+
+                const y =
+                    motionScroll * speed;
+
+
+                const rotation =
+                    motionScroll *
+                    (0.008 + index * 0.002);
+
+
+                const mouseOffset =
+                    currentMouseX *
+                    (5 + index);
+
+
+                crosshair.style.transform =
+                    `translate3d(
+                        ${mouseOffset}px,
+                        ${y}px,
+                        0
+                    )
+                    rotate(${rotation}deg)`;
+
+            }
+        );
+
+
+        /* ---------------------------------------------
+           REQUEST NEXT FRAME
+        --------------------------------------------- */
+
+        ticking = false;
+
+    }
+
+
+    /* -----------------------------------------------------
+       RAF
+    ----------------------------------------------------- */
+
+    function requestUpdate() {
+
+        if (ticking) return;
+
+        ticking = true;
+
+        window.requestAnimationFrame(
+            updateMotion
+        );
+
+    }
+
+
+    /* -----------------------------------------------------
+       EVENTS
+    ----------------------------------------------------- */
+
+    window.addEventListener(
+        "scroll",
+        requestUpdate,
+        { passive: true }
+    );
+
+
+    window.addEventListener(
+        "resize",
+        requestUpdate
+    );
+
+
+    window.addEventListener(
+        "mousemove",
+        requestUpdate,
+        { passive: true }
+    );
+
+
+    /* -----------------------------------------------------
+       INITIAL
+    ----------------------------------------------------- */
+
+    updateMotion();
+
+}
 
 /* =========================================================
    PROJECT IMAGE PARALLAX
@@ -1048,6 +1375,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initScrollProgress();
     initSmoothLinks();
     initParallax();
+    initGlobalMotion();
     initProjectHover();
     initHeader();
     initImageLoading();
